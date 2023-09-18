@@ -1,6 +1,7 @@
-﻿using SnowplowCLI;
+﻿using SnowplowCLI.Utils;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SnowplowCLI
 {
@@ -21,13 +22,13 @@ namespace SnowplowCLI
                 return;
             }
 
-            using (NativeReader reader = new (new FileStream(filePath, FileMode.Open)))
+            using (DataStream stream = BlockStream.FromFile(filePath))
             {
-                string idCheck = reader.ReadSizedString(4);
+                string idCheck = stream.ReadFixedSizedString(4);
                 if (idCheck == "WEST")
                 {
-                    uint version = reader.ReadUInt();
-                    if (version != 0x16) //i only really know of this one rn
+                    uint version = stream.ReadUInt32();
+                    if (version != 0x16) //i could support more but i can only test this one
                     {
                         Console.WriteLine("Unsupported version " + version + " Expected 0x16.");
                         return;
@@ -36,12 +37,12 @@ namespace SnowplowCLI
                     {
                         //we have an toc we support so lets read it
                         SDFS SDFS = new SDFS();
-                        SDFS.Read(reader, version);
+                        SDFS.Read(stream, version);
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Invalid SDFTOC. Are you sure the file exists?");
+                    Console.WriteLine("Not a valid SDFTOC.");
                     return;
                 }
             }

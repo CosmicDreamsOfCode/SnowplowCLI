@@ -1,6 +1,8 @@
-﻿using System;
+﻿using SnowplowCLI.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,55 +10,78 @@ namespace SnowplowCLI
 {
     public class SDFS
     {
-        public uint DecompressedSize;
-        public uint DataOffset; //not in 0x16 but lets set it up anyway
-        public uint CompressedSize;
+        public uint decompressedSize;
+        public uint dataOffset;
+        public uint compressedSize;
         public uint idCount;
         public uint ddsHeaderCount;
 
-        public void Read(NativeReader reader, uint version)
+        public void Read(DataStream stream, uint version)
         {
-            DecompressedSize = reader.ReadUInt();
+            decompressedSize = stream.ReadUInt32();
             if (version >= 0x17)
-                DataOffset = reader.ReadUInt();
-            CompressedSize = reader.ReadUInt();
-            reader.Position += 4; //pad
-            idCount = reader.ReadUInt();
-            ddsHeaderCount = reader.ReadUInt();
-            var startId = new ID(reader);
+                dataOffset = stream.ReadUInt32();
+            compressedSize = stream.ReadUInt32();
+            stream.Position += 4; //pad
+            idCount = stream.ReadUInt32();
+            ddsHeaderCount = stream.ReadUInt32();
+            var startId = new ID(stream);
 
-            byte flag = reader.ReadByte();
+            byte flag = stream.ReadByte();
             if (flag != 0)
             {
-                byte[] unk = reader.ReadBytes(0x140);
+                byte[] unk = stream.ReadBytes(0x140);
             }
 
-            if (DataOffset != 0)
+            if (dataOffset != 0)
             {
-                reader.Position = DataOffset + 0x51;
+                stream.Position = dataOffset + 0x51;
 
-                uint signature = reader.ReadUInt();
-                //decompress name block 
-                var endId = new ID(reader);
+                uint signature = stream.ReadUInt32();
+                byte[] compressedToc = stream.ReadBytes((int)compressedSize);
+                DecompressTocBlock(signature, compressedToc, decompressedSize, version);
+                var endId = new ID(stream);
             }
             else
             {
                 //todo
             }
         }
-    }
 
-    public class ID
-    {
-        public string ubisoft;
-        public byte[] data;
-        public string massive;
-
-        public ID(NativeReader reader)
+        public void DecompressTocBlock(uint signature, byte[] CompressedToc, uint decompressedSize, uint version)
         {
-            ubisoft = reader.ReadNullTerminatedString();
-            data = reader.ReadBytes(0x20);
-            massive = reader.ReadNullTerminatedString();
+            byte[] DecompressedToc = null;
+            if (signature == 0xDFF25B82 || signature == 0xFD2FB528)
+            {
+                DecompressedToc = ZstdUtils.Decompressor(CompressedToc);
+            }
+            else if (signature == 0x184D2204 || version >= 0x17)
+            {
+                Console.WriteLine("LZ4 Compression not implimented.");
+                return;
+            }
+            else
+            {
+                Console.WriteLine("ZLIB Compression not implimented.");
+                return;
+            }
+
         }
+
+        public class ID
+        {
+            public string massive;
+            public byte[] data;
+            public string ubisoft;
+
+            public ID(DataStream stream)
+            {
+                massive = stream.ReadNullTerminatedString();
+                data = stream.ReadBytes(0x20);
+                ubisoft = stream.ReadNullTerminatedString();
+            }
+        }
+
     }
+
 }
