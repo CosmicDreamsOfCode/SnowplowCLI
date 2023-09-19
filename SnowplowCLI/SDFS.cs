@@ -1,4 +1,5 @@
 ﻿using SnowplowCLI.Utils;
+using SnowplowCLI.Utils.Compression;
 using System;
 using System.Collections.Generic;
 using System.IO.Enumeration;
@@ -215,17 +216,17 @@ namespace SnowplowCLI
             byte[] decompressedFileTable = new byte[decompressedFileTableSize];
             if (signature == 0xDFF25B82 || signature == 0xFD2FB528) //zstd
             {
-                decompressedFileTable = ZstdUtils.Decompressor(compressedFileTable);
+                decompressedFileTable = Zstd.Decompress(compressedFileTable);
                 return decompressedFileTable;
             }
             else if (signature == 0x184D2204 || version >= 0x17) //lz4
             {
-                Console.WriteLine("LZ4 Compression not implimented.");
+                decompressedFileTable = Lz4.Decompress(compressedFileTable);
                 return decompressedFileTable;
             }
             else //zlib
             {
-                Console.WriteLine("ZLIB Compression not implimented.");
+                decompressedFileTable = Zlib.Decompress(compressedFileTable);
                 return decompressedFileTable;
             }
 
