@@ -25,35 +25,35 @@ namespace SnowplowCLI
                 dataOffset = stream.ReadUInt32();
             compressedTocSize = stream.ReadUInt32();
             stream.Position += 4; //pad
-            packageCount = stream.ReadUInt32();
+            packageCount = stream.ReadUInt32(); //count of sdfdata archives
             ddsHeaderCount = stream.ReadUInt32();
             ID startId = new ID(stream);
 
             byte flag = stream.ReadByte();
             if (flag != 0)
             {
-                byte[] unk1 = stream.ReadBytes(0x140);
+                byte[] unk1 = stream.ReadBytes(0x140); //no idea whats contained in these bytes
             }
 
             if (dataOffset != 0)
             {
-                stream.Position = dataOffset + 0x51;
+                stream.Position = dataOffset + 0x51; //idk what the extra 81 bytes is for but it takes us straight to the toc block
             }
             else
             {
-                uint[] unk2 = new uint[packageCount];
+                uint[] unk2 = new uint[packageCount]; //unknown, probably related to the packages in some way given the count matches the package count
                 for (int i = 0;i < packageCount; i++)
                 {
                     unk2[i] = stream.ReadUInt32();
                 }
 
-                ID[] packageIds = new ID[packageCount];
+                ID[] packageIds = new ID[packageCount]; //read package ids
                 for (int i = 0;i < packageCount; i++)
                 {
                     packageIds[i] = new ID(stream);
                 }
 
-                DDSHeader[] ddsHeaders = new DDSHeader[ddsHeaderCount];
+                DDSHeader[] ddsHeaders = new DDSHeader[ddsHeaderCount]; //read dds headers
                 for (int i = 0; i < ddsHeaderCount; i++)
                 {
                     ddsHeaders[i] = new DDSHeader(stream);
@@ -61,7 +61,7 @@ namespace SnowplowCLI
             }
 
             uint signature = stream.ReadUInt32();
-            stream.Position -= 4;
+            stream.Position -= 4; //go back to start of compressed data
             compressedToc = stream.ReadBytes((int)compressedTocSize);
             decompressedToc = DecompressTocBlock(signature, compressedToc, decompressedTocSize, version);
             ID endId = new ID(stream);
@@ -70,17 +70,17 @@ namespace SnowplowCLI
         public byte[] DecompressTocBlock(uint signature, byte[] compressedToc, uint decompressedTocSize, uint version)
         {
             byte[] DecompressedToc = new byte[decompressedTocSize];
-            if (signature == 0xDFF25B82 || signature == 0xFD2FB528)
+            if (signature == 0xDFF25B82 || signature == 0xFD2FB528) //zstd
             {
                 DecompressedToc = ZstdUtils.Decompressor(compressedToc);
                 return DecompressedToc;
             }
-            else if (signature == 0x184D2204 || version >= 0x17)
+            else if (signature == 0x184D2204 || version >= 0x17) //lz4
             {
                 Console.WriteLine("LZ4 Compression not implimented.");
                 return DecompressedToc;
             }
-            else
+            else //zlib
             {
                 Console.WriteLine("ZLIB Compression not implimented.");
                 return DecompressedToc;
@@ -91,13 +91,13 @@ namespace SnowplowCLI
         public class ID
         {
             public string massive;
-            public byte[] data;
+            public byte[] checksum;
             public string ubisoft;
 
             public ID(DataStream stream)
             {
                 massive = stream.ReadNullTerminatedString();
-                data = stream.ReadBytes(0x20);
+                checksum = stream.ReadBytes(0x20); //unsure what method this uses
                 ubisoft = stream.ReadNullTerminatedString();
             }
         }
@@ -110,7 +110,7 @@ namespace SnowplowCLI
             public DDSHeader(DataStream stream)
             {
                 unk = stream.ReadUInt32();
-                data = stream.ReadBytes(200); //approximation of a dds header size. hopefully this works
+                data = stream.ReadBytes(200); //approximation of the dds header size. hopefully this works
             }
         }
 

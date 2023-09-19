@@ -35,7 +35,7 @@ namespace SnowplowCLI
                     }
                     else
                     {
-                        //we have an toc we support so lets read it
+                        //we have a file we support so lets read it
                         SDFS SDFS = new SDFS();
                         SDFS.Read(stream, version);
 
