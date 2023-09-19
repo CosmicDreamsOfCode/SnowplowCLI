@@ -37,9 +37,9 @@ namespace SnowplowCLI
                     }
                     else
                     {
-                        //we have a file we support so lets read it
+                        //we have a valid TOC, let's initalise the file system
                         SDFS SDFS = new SDFS();
-                        SDFS.Read(stream, version);
+                        SDFS.Initalise(stream, version);
 
                         //using (StreamWriter writer = File.CreateText(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\FileEntries.txt"))
                         //{
@@ -52,7 +52,7 @@ namespace SnowplowCLI
                 }
                 else
                 {
-                    Console.WriteLine("Not a valid SDFTOC.");
+                    Console.WriteLine("Not a valid TOC.");
                     return;
                 }
             }

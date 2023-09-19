@@ -22,8 +22,11 @@ namespace SnowplowCLI
         public FileTable fileTable;
         public byte[] decompressedFileTable;
 
-        public void Read(DataStream stream, uint version)
+        public void Initalise(DataStream stream, uint version)
         {
+            //
+            //initalises the file system
+            //
             decompressedFileTableSize = stream.ReadUInt32();
             if (version >= 0x17)
                 dataOffset = stream.ReadUInt32();
@@ -74,20 +77,25 @@ namespace SnowplowCLI
 
         public FileTable ReadFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version)
         {
-            byte[] decompressedFileTable = DecompressFileTable(signature, compressedFileTable, decompressedFileTableSize, version);
-            MemoryStream stream = new MemoryStream(decompressedFileTable);
+            //
+            //calls to decompress the file table and then passes it to the parser
+            //
+            byte[] decompressedFileTable = DecompressFileTable(signature, compressedFileTable, decompressedFileTableSize, version); //decompress the file table
+            MemoryStream stream = new MemoryStream(decompressedFileTable); //convert to stream
             
             using (DataStream stream1 = new DataStream(stream))
             {
                 FileTable fileTable = new FileTable();
-                ParseFileTable(stream1, fileTable, version);
+                ParseFileTable(stream1, fileTable, version); //parse!
                 return fileTable;
-            }
-            
+            }         
         }
 
         public void ParseFileTable(DataStream stream, FileTable fileTable, uint version, string name = "")
         {
+            //
+            //adapted from https://github.com/KillzXGaming/Switch-Toolbox/blob/master/File_Format_Library/FileFormats/Archives/SDF.cs#L366
+            //
             char ch = stream.ReadChar();
 
             if (ch == 0)
@@ -201,8 +209,11 @@ namespace SnowplowCLI
 
         #region Utility Functions
 
-        public byte[] DecompressFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version) //decompress file table 
+        public byte[] DecompressFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version)
         {
+            //
+            //checks compression type and decompresses the file table
+            //
             byte[] decompressedFileTable = new byte[decompressedFileTableSize];
             if (signature == 0xDFF25B82 || signature == 0xFD2FB528) //zstd
             {
@@ -224,6 +235,9 @@ namespace SnowplowCLI
 
         public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex)
         {
+            //
+            //adds a file entry to the file table
+            //
             string packageName = GetPackageName(packageId);
             fileEntries.Add(new FileEntry()
             {
@@ -238,8 +252,11 @@ namespace SnowplowCLI
             });
         }
 
-        public string GetPackageName(ulong packageId) //get sdfdata package name for a specified packageId
+        public string GetPackageName(ulong packageId)
         {
+            //
+            //get sdfdata package name for a specified packageId
+            //
             string packageLayer;
             if (packageId < 1000) packageLayer = "A";
             else if (packageId < 2000) packageLayer = "B";
@@ -250,8 +267,11 @@ namespace SnowplowCLI
             return packageName;
         }
 
-        private ulong ReadVariadicInteger(int Count, DataStream stream) //https://github.com/KillzXGaming/Switch-Toolbox/blob/master/File_Format_Library/FileFormats/Archives/SDF.cs#L228
+        private ulong ReadVariadicInteger(int Count, DataStream stream)
         {
+            //
+            //adapted from https://github.com/KillzXGaming/Switch-Toolbox/blob/master/File_Format_Library/FileFormats/Archives/SDF.cs#L228
+            //
             ulong result = 0;
 
             for (int i = 0; i < Count; i++)
