@@ -38,6 +38,9 @@ namespace SnowplowCLI
                         //we have an toc we support so lets read it
                         SDFS SDFS = new SDFS();
                         SDFS.Read(stream, version);
+
+                        //using var writer = new BinaryWriter(File.OpenWrite(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\DecompressedNameBlock"));
+                        //writer.Write(SDFS.decompressedToc); //debug
                     }
                 }
                 else
