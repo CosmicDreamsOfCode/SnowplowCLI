@@ -1,7 +1,9 @@
 ﻿using SnowplowCLI.Utils;
 using System.IO;
+using System.IO.Enumeration;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using static SnowplowCLI.SDFS;
 
 namespace SnowplowCLI
 {
@@ -39,8 +41,13 @@ namespace SnowplowCLI
                         SDFS SDFS = new SDFS();
                         SDFS.Read(stream, version);
 
-                        //using var writer = new BinaryWriter(File.OpenWrite(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\DecompressedNameBlock"));
-                        //writer.Write(SDFS.decompressedToc); //debug
+                        //using (StreamWriter writer = File.CreateText(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\FileEntries.txt"))
+                        //{
+                        //    foreach (FileEntry entry in SDFS.fileTable.fileEntries)
+                        //    {
+                        //        writer.WriteLine(entry.fileName);
+                        //    }
+                        //}
                     }
                 }
                 else
