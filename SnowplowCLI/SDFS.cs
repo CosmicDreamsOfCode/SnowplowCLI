@@ -18,9 +18,7 @@ namespace SnowplowCLI
         public uint compressedFileTableSize;
         public uint packageCount;
         public uint ddsHeaderCount;
-        public byte[] compressedFileTable;
         public FileTable fileTable;
-        public byte[] decompressedFileTable;
 
         public void Initalise(DataStream stream, uint version)
         {
@@ -69,7 +67,7 @@ namespace SnowplowCLI
 
             uint signature = stream.ReadUInt32();
             stream.Position -= 4; //go back to start of compressed data
-            compressedFileTable = stream.ReadBytes((int)compressedFileTableSize);
+            byte[] compressedFileTable = stream.ReadBytes((int)compressedFileTableSize);
             fileTable = ReadFileTable(signature, compressedFileTable, decompressedFileTableSize, version);
             ID endId = new ID(stream);
 
