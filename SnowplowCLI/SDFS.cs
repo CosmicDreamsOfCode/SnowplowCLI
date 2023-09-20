@@ -249,7 +249,7 @@ namespace SnowplowCLI
                         if (compSizeArray.Count == 0 && hasCompression)
                             compSizeArray.Add(compressedSize);
 
-                        addFileEntry(fileTable.fileEntries, name, packageId, packageOffset, hasCompression, compSizeArray, decompressedSize, byteCount != 0 && chunkIndex == 0, DdsType);
+                        addFileEntry(fileTable.fileEntries, name, packageId, packageOffset, hasCompression, compSizeArray, decompressedSize, byteCount != 0 && chunkIndex == 0, DdsType, chunkIndex != 0);
                     }
                 }
                 if ((ch & 8) != 0) //flag1
@@ -300,7 +300,7 @@ namespace SnowplowCLI
 
         #region Utility Functions
 
-        public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex)
+        public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex, bool isChunk)
         {
             //
             //adds a file entry to the file table
@@ -316,6 +316,7 @@ namespace SnowplowCLI
                 decompressedSize = decompressedSize,
                 isDDS = isDDS,
                 ddsHeaderIndex = ddsHeaderIndex,
+                isChunk = isChunk
             });
         }
 
@@ -381,6 +382,7 @@ namespace SnowplowCLI
             public ulong decompressedSize;
             public bool isDDS;
             public ulong ddsHeaderIndex;
+            public bool isChunk;
         }
 
         public class ID

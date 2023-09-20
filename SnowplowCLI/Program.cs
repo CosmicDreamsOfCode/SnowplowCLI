@@ -1,4 +1,5 @@
 ﻿using SnowplowCLI.Utils;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Enumeration;
 using System.Reflection;
@@ -44,8 +45,24 @@ namespace SnowplowCLI
                             string fsFileDir = Path.GetDirectoryName(fileEntry.fileName);
                             string outputPath = Path.Combine(dumpPath, fsFileDir);
                             Directory.CreateDirectory(outputPath);
-                            var writer = new BinaryWriter(File.Create(Path.Combine(dumpPath, fileEntry.fileName)));
-                            writer.Write(fileData);
+                            if (fileEntry.isChunk)
+                            {
+                                using (var fileStream = new FileStream(Path.Combine(dumpPath, fileEntry.fileName), FileMode.Append, FileAccess.Write))
+                                {
+                                    using (var writer = new BinaryWriter(fileStream))
+                                    {
+                                        writer.Write(fileData);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                using (var writer = new BinaryWriter(File.Create(Path.Combine(dumpPath, fileEntry.fileName))))
+                                {
+                                    writer.Write(fileData);
+                                }
+                            }
+
                             Console.WriteLine(fileEntry.fileName);
                         }
 
