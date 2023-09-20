@@ -1,12 +1,16 @@
 # SnowplowCLI
 Experimental tool for dumping data from Snowdrop Engine games.
--
 
-Heavy WIP, currently there is no arguments, paths must be specified manually in a few places.
+Usage:
+SnowplowCLI [tocPath] [outputPath]
+
+## Known Issues
+
+- If a file is split across multiple packages, the extractor will fail.
 
 
----
-SnowplowCLI makes use of the following packages:
+
+## SnowplowCLI makes use of the following packages:
 
 - [ZstdNet](https://github.com/skbkontur/ZstdNet)
 - [K4os.Compression.LZ4.Streams](https://github.com/MiloszKrajewski/K4os.Compression.LZ4)
