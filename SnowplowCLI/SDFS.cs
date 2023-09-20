@@ -22,7 +22,7 @@ namespace SnowplowCLI
         public DDSHeader[] ddsHeaders;
         public FileTable fileTable;
 
-        public void Initalise(DataStream stream, uint version)
+        public void Initalise(DataStream stream, uint version, string seperator)
         {
             //
             //initalises the file system
@@ -70,7 +70,7 @@ namespace SnowplowCLI
             uint signature = stream.ReadUInt32();
             stream.Position -= 4; //go back to start of compressed data
             byte[] compressedFileTable = stream.ReadBytes((int)compressedFileTableSize);
-            fileTable = ReadFileTable(signature, compressedFileTable, decompressedFileTableSize, version);
+            fileTable = ReadFileTable(signature, compressedFileTable, decompressedFileTableSize, version, seperator);
             ID endId = new ID(stream);
 
         }
@@ -140,7 +140,7 @@ namespace SnowplowCLI
 
         #region File Table
 
-        public FileTable ReadFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version)
+        public FileTable ReadFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version, string seperator)
         {
             //
             //calls to decompress the file table and then passes it to the parser
@@ -151,12 +151,12 @@ namespace SnowplowCLI
             using (DataStream stream1 = new DataStream(stream))
             {
                 FileTable fileTable = new FileTable();
-                ParseFileTable(stream1, fileTable, version); //parse!
+                ParseFileTable(stream1, fileTable, version, seperator); //parse!
                 return fileTable;
             }         
         }
 
-        public void ParseFileTable(DataStream stream, FileTable fileTable, uint version, string name = "")
+        public void ParseFileTable(DataStream stream, FileTable fileTable, uint version, string seperator, string name = "")
         {
             //
             //adapted from https://github.com/KillzXGaming/Switch-Toolbox/blob/master/File_Format_Library/FileFormats/Archives/SDF.cs#L366
@@ -173,7 +173,7 @@ namespace SnowplowCLI
                     name += stream.ReadChar();
                 }
 
-                ParseFileTable(stream, fileTable, version, name);
+                ParseFileTable(stream, fileTable, version, seperator, name);
             }
             else if (ch >= 'A' && ch <= 'Z') //file entry
             {
@@ -249,7 +249,7 @@ namespace SnowplowCLI
                         if (compSizeArray.Count == 0 && hasCompression)
                             compSizeArray.Add(compressedSize);
 
-                        addFileEntry(fileTable.fileEntries, name, packageId, packageOffset, hasCompression, compSizeArray, decompressedSize, byteCount != 0 && chunkIndex == 0, DdsType, chunkIndex != 0);
+                        addFileEntry(fileTable.fileEntries, name, packageId, seperator, packageOffset, hasCompression, compSizeArray, decompressedSize, byteCount != 0 && chunkIndex == 0, DdsType, chunkIndex != 0);
                     }
                 }
                 if ((ch & 8) != 0) //flag1
@@ -265,9 +265,9 @@ namespace SnowplowCLI
             else
             {
                 uint offset = stream.ReadUInt32();
-                ParseFileTable(stream, fileTable, version, name);
+                ParseFileTable(stream, fileTable, version, seperator, name);
                 stream.Seek(offset, SeekOrigin.Begin);
-                ParseFileTable(stream, fileTable, version, name);
+                ParseFileTable(stream, fileTable, version, seperator, name);
             }
 
         }
@@ -300,12 +300,12 @@ namespace SnowplowCLI
 
         #region Utility Functions
 
-        public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex, bool isChunk)
+        public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, string seperator, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex, bool isChunk)
         {
             //
             //adds a file entry to the file table
             //
-            string packageName = GetPackageName(packageId);
+            string packageName = GetPackageName(packageId, seperator);
             fileEntries.Add(new FileEntry()
             {
                 fileName = fileName,
@@ -320,7 +320,7 @@ namespace SnowplowCLI
             });
         }
 
-        public string GetPackageName(ulong packageId)
+        public string GetPackageName(ulong packageId, string seperator)
         {
             //
             //get sdfdata package name for a specified packageId
@@ -331,7 +331,7 @@ namespace SnowplowCLI
             else if (packageId < 3000) packageLayer = "C";
             else packageLayer = "D";
 
-            string packageName = $"sdf-{packageLayer}-{packageId.ToString("D" + 4)}.sdfdata";
+            string packageName = $"sdf{seperator}{packageLayer}{seperator}{packageId.ToString("D" + 4)}.sdfdata";
             return packageName;
         }
 

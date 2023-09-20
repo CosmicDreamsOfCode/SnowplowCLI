@@ -36,8 +36,13 @@ namespace SnowplowCLI
                     else
                     {
                         //we have a valid TOC, let's initalise the file system
+                        string seperator = $"-";
+                        if (Directory.EnumerateFiles(installDir, "sdf-*-*.sdfdata").Count() < 1)
+                        {
+                            seperator = $"_";
+                        }
                         SDFS fs = new SDFS();
-                        fs.Initalise(stream, version);
+                        fs.Initalise(stream, version, seperator);
 
                         foreach (FileEntry fileEntry in fs.fileTable.fileEntries)
                         {

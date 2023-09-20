@@ -2,7 +2,7 @@
   "profiles": {
     "SnowplowCLI": {
       "commandName": "Project",
-      "commandLineArgs": "\"I:\\SwitchDumps\\MarioRabbids\\romfs\\moria\\sdf\\nx\\data\\sdf.sdftoc\" \"E:\\Game Dumps\\MRKB-DumpTest\""
+      "commandLineArgs": "\"I:\\SwitchDumps\\MarioRabbidsSparks\\dlcfs\\RaymanPhantomShow\\sdf.sdftoc\" \"E:\\Game Dumps\\MRSOH-DLC06-DumpTest\""
     }
   }
 }
