@@ -41,13 +41,9 @@ namespace SnowplowCLI
                         SDFS SDFS = new SDFS();
                         SDFS.Initalise(stream, version);
 
-                        //using (StreamWriter writer = File.CreateText(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\FileEntries.txt"))
-                        //{
-                        //    foreach (FileEntry entry in SDFS.fileTable.fileEntries)
-                        //    {
-                        //        writer.WriteLine(entry.fileName);
-                        //    }
-                        //}
+                        byte[] testFile = SDFS.RequestFileData(SDFS, SDFS.fileTable.fileEntries[3290], @"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\");
+                        using var writer = new BinaryWriter(File.Create(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\" + "her_mario_01_body_d.dds"));
+                        writer.Write(testFile);
                     }
                 }
                 else

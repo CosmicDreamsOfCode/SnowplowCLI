@@ -19,6 +19,7 @@ namespace SnowplowCLI
         public uint compressedFileTableSize;
         public uint packageCount;
         public uint ddsHeaderCount;
+        public DDSHeader[] ddsHeaders;
         public FileTable fileTable;
 
         public void Initalise(DataStream stream, uint version)
@@ -59,7 +60,7 @@ namespace SnowplowCLI
                     packageIds[i] = new ID(stream);
                 }
 
-                DDSHeader[] ddsHeaders = new DDSHeader[ddsHeaderCount]; //read dds headers
+                ddsHeaders = new DDSHeader[ddsHeaderCount]; //read dds headers
                 for (int i = 0; i < ddsHeaderCount; i++)
                 {
                     ddsHeaders[i] = new DDSHeader(stream);
@@ -73,6 +74,71 @@ namespace SnowplowCLI
             ID endId = new ID(stream);
 
         }
+
+        public byte[] RequestFileData(SDFS fs, FileEntry fileEntry, string path)
+        {
+            List<byte[]> fileData = new List<byte[]>();
+
+            string packagePath = Path.Combine(path, fileEntry.packageName);
+            if (File.Exists(packagePath))
+            {
+                using (DataStream stream = BlockStream.FromFile(packagePath))
+                {
+                    if (fileEntry.compressedSizes.Count == 0)
+                    {
+                        stream.Position = (long)fileEntry.offset;
+                        fileData.Add(stream.ReadBytes((int)fileEntry.decompressedSize).ToArray());
+                    }
+                    else
+                    {
+                        var pageSize = (double)0x10000;
+                        var decompOffset = 0;
+                        var compOffset = 0;
+
+                        if (fileEntry.isDDS)
+                        {
+                            MemoryStream ms = new MemoryStream(fs.ddsHeaders[fileEntry.ddsHeaderIndex].data);
+                            using (DataStream ds = new DataStream(ms))
+                            {
+                                ds.Position = 84;
+                                bool IsDX10 = ds.ReadFixedSizedString(4) == "DX10";
+
+                                if (IsDX10)
+                                {
+                                    fileData.Add(fs.ddsHeaders[fileEntry.ddsHeaderIndex].data.Take((int)0x94).ToArray());
+                                }
+                                else
+                                {
+                                    fileData.Add(fs.ddsHeaders[fileEntry.ddsHeaderIndex].data.Take((int)0x80).ToArray());
+                                }
+                            }
+                        }
+                        
+                        for (var i = 0; i < fileEntry.compressedSizes.Count; i++)
+                        {
+                            var decompressedSize = (int)Math.Min((int)fileEntry.decompressedSize - decompOffset, pageSize);
+                            if (fileEntry.compressedSizes[i] == 0 || decompressedSize == (int)fileEntry.compressedSizes[i])
+                            {
+                                stream.Seek((int)fileEntry.offset + compOffset, SeekOrigin.Begin);
+                                fileEntry.compressedSizes[i] = (ulong)decompressedSize;
+                                fileData.Add(stream.ReadBytes(decompressedSize));
+                            }
+                            else
+                            {
+                                stream.Seek((int)fileEntry.offset + compOffset, SeekOrigin.Begin);
+                                fileData.Add(Zstd.Decompress(stream.ReadBytes((int)fileEntry.compressedSizes[i])));
+                            }
+                            decompOffset += decompressedSize;
+                            compOffset += (int)fileEntry.compressedSizes[i];
+                        }
+                    }
+                }
+            }
+
+            return CombineByteArray(fileData.ToArray());
+        }
+
+        #region File Table
 
         public FileTable ReadFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version)
         {
@@ -206,8 +272,6 @@ namespace SnowplowCLI
 
         }
 
-        #region Utility Functions
-
         public byte[] DecompressFileTable(uint signature, byte[] compressedFileTable, uint decompressedFileTableSize, uint version)
         {
             //
@@ -231,6 +295,10 @@ namespace SnowplowCLI
             }
 
         }
+
+        #endregion
+
+        #region Utility Functions
 
         public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex)
         {
@@ -279,6 +347,20 @@ namespace SnowplowCLI
             }
             return result;
         }
+        public static byte[] CombineByteArray(params byte[][] arrays)
+        {
+            //
+            //from https://github.com/KillzXGaming/Switch-Toolbox/blob/master/Switch_Toolbox_Library/Util/Util.cs#L155
+            //
+            byte[] rv = new byte[arrays.Sum(a => a.Length)];
+            int offset = 0;
+            foreach (byte[] array in arrays)
+            {
+                System.Buffer.BlockCopy(array, 0, rv, offset, array.Length);
+                offset += array.Length;
+            }
+            return rv;
+        }
 
         #endregion
 
@@ -324,6 +406,7 @@ namespace SnowplowCLI
             {
                 unk = stream.ReadUInt32();
                 data = stream.ReadBytes(200); //approximation of the dds header size. hopefully this works
+
             }
         } 
         #endregion
