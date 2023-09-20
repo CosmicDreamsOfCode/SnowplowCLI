@@ -1,7 +1,8 @@
 {
   "profiles": {
     "SnowplowCLI": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "\"I:\\SwitchDumps\\MarioRabbids\\romfs\\moria\\sdf\\nx\\data\\sdf.sdftoc\" \"E:\\Game Dumps\\MRKB-DumpTest\""
     }
   }
 }
