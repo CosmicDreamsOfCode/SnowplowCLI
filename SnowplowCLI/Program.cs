@@ -11,20 +11,17 @@ namespace SnowplowCLI
     {
         public static void Main(string[] args)
         {
-            //string filePath = args[0];
-            //int index = args[0].LastIndexOf("\\");
-            string filePath = @"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\sdf.sdftoc";
-            string fileDir = Path.GetFileName(filePath);
-            string exepath = Assembly.GetExecutingAssembly().Location;
-            exepath = Path.GetDirectoryName(exepath);
+            string tocPath = args[0];
+            string dumpPath = args[1];
+            string installDir = Path.GetDirectoryName(tocPath);
 
-            if (!File.Exists(filePath))
+            if (!File.Exists(tocPath))
             {
                 Console.WriteLine("File does not exist.");
                 return;
             }
 
-            using (DataStream stream = BlockStream.FromFile(filePath))
+            using (DataStream stream = BlockStream.FromFile(tocPath))
             {
                 string idCheck = stream.ReadFixedSizedString(4);
                 if (idCheck == "WEST")
@@ -38,12 +35,21 @@ namespace SnowplowCLI
                     else
                     {
                         //we have a valid TOC, let's initalise the file system
-                        SDFS SDFS = new SDFS();
-                        SDFS.Initalise(stream, version);
+                        SDFS fs = new SDFS();
+                        fs.Initalise(stream, version);
 
-                        byte[] testFile = SDFS.RequestFileData(SDFS, SDFS.fileTable.fileEntries[3290], @"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\");
-                        using var writer = new BinaryWriter(File.Create(@"I:\SwitchDumps\MarioRabbids\romfs\moria\sdf\nx\data\" + "her_mario_01_body_d.dds"));
-                        writer.Write(testFile);
+                        foreach (FileEntry fileEntry in fs.fileTable.fileEntries)
+                        {
+                            byte[] fileData = fs.RequestFileData(fs, fileEntry, installDir);
+                            string fsFileDir = Path.GetDirectoryName(fileEntry.fileName);
+                            string outputPath = Path.Combine(dumpPath, fsFileDir);
+                            Directory.CreateDirectory(outputPath);
+                            var writer = new BinaryWriter(File.Create(Path.Combine(dumpPath, fileEntry.fileName)));
+                            writer.Write(fileData);
+                            Console.WriteLine(fileEntry.fileName);
+                        }
+
+                        Console.WriteLine("Finished!");
                     }
                 }
                 else
