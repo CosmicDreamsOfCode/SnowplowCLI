@@ -1,14 +1,10 @@
 # SnowplowCLI
 Experimental tool for dumping data from Snowdrop Engine games.
 
+It's a little slow right now, some help optimising would be nice!
+
 Usage:
 SnowplowCLI [tocPath] [outputPath]
-
-## Known Issues
-
-- If a file is split across multiple packages, the extractor will fail.
-
-
 
 ## SnowplowCLI makes use of the following packages:
 
