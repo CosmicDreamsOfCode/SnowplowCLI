@@ -1,14 +1,5 @@
 ﻿using SnowplowCLI.Utils;
 using SnowplowCLI.Utils.Compression;
-using System;
-using System.Collections.Generic;
-using System.IO.Enumeration;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace SnowplowCLI
 {
@@ -88,7 +79,7 @@ namespace SnowplowCLI
                 {
                     if (fileEntry.compressedSizes.Count == 0)
                     {
-                        stream.Position = (long)fileEntry.offset;
+                        stream.Position = (long)fileEntry.filePartoffset;
                         fileData.Add(stream.ReadBytes((int)fileEntry.decompressedSize).ToArray());
                     }
                     else
@@ -121,13 +112,13 @@ namespace SnowplowCLI
                             var decompressedSize = (int)Math.Min((int)fileEntry.decompressedSize - decompOffset, pageSize);
                             if (fileEntry.compressedSizes[i] == 0 || decompressedSize == (int)fileEntry.compressedSizes[i])
                             {
-                                stream.Seek((int)fileEntry.offset + compOffset, SeekOrigin.Begin);
+                                stream.Seek((int)fileEntry.filePartoffset + compOffset, SeekOrigin.Begin);
                                 fileEntry.compressedSizes[i] = (ulong)decompressedSize;
                                 fileData.Add(stream.ReadBytes(decompressedSize));
                             }
                             else
                             {
-                                stream.Seek((int)fileEntry.offset + compOffset, SeekOrigin.Begin);
+                                stream.Seek((int)fileEntry.filePartoffset + compOffset, SeekOrigin.Begin);
                                 fileData.Add(Zstd.Decompress(stream.ReadBytes((int)fileEntry.compressedSizes[i])));
                             }
                             decompOffset += decompressedSize;
@@ -359,7 +350,7 @@ namespace SnowplowCLI
             int offset = 0;
             foreach (byte[] array in arrays)
             {
-                System.Buffer.BlockCopy(array, 0, rv, offset, array.Length);
+                Buffer.BlockCopy(array, 0, rv, offset, array.Length);
                 offset += array.Length;
             }
             return rv;
@@ -390,13 +381,13 @@ namespace SnowplowCLI
         public class ID
         {
             public string massive;
-            public byte[] checksum;
+            public byte[] data;
             public string ubisoft;
 
             public ID(DataStream stream)
             {
                 massive = stream.ReadNullTerminatedString();
-                checksum = stream.ReadBytes(0x20); //unsure what method this uses
+                data = stream.ReadBytes(0x20); //unsure what method this uses
                 ubisoft = stream.ReadNullTerminatedString();
             }
         }
