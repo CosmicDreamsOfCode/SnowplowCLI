@@ -9,8 +9,8 @@ Usage:
 
 ## Supported Games
 
-- [Mario + Rabbids: Kingdom Battle [NSW]](https://www.ubisoft.com/en-gb/game/mario-rabbids/kingdom-battle)
-- [Mario + Rabbids: Sparks of Hope [NSW]](https://www.ubisoft.com/en-gb/game/mario-rabbids/sparks-of-hope)
+- [Mario + Rabbids: Kingdom Battle](https://www.ubisoft.com/en-gb/game/mario-rabbids/kingdom-battle)
+- [Mario + Rabbids: Sparks of Hope](https://www.ubisoft.com/en-gb/game/mario-rabbids/sparks-of-hope)
 
 
 ## SnowplowCLI makes use of the following packages:
