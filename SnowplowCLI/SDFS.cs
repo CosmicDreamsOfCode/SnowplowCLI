@@ -17,7 +17,9 @@ namespace SnowplowCLI
         public uint decompressedFileTableSize;
         public uint dataOffset;
         public uint compressedFileTableSize;
-        public uint packageCount;
+        public uint firstInstallPart;
+        public uint installPartCount;
+        public uint[] installPartSizes;
         public uint ddsHeaderCount;
         public DDSHeader[] ddsHeaders;
         public FileTable fileTable;
@@ -31,8 +33,8 @@ namespace SnowplowCLI
             if (version >= 0x17)
                 dataOffset = stream.ReadUInt32();
             compressedFileTableSize = stream.ReadUInt32();
-            stream.Position += 4; //pad
-            packageCount = stream.ReadUInt32(); //count of sdfdata archives
+            firstInstallPart = stream.ReadUInt32();
+            installPartCount = stream.ReadUInt32(); //count of sdfdata archives
             ddsHeaderCount = stream.ReadUInt32();
             ID startId = new ID(stream);
 
@@ -48,16 +50,16 @@ namespace SnowplowCLI
             }
             else
             {
-                uint[] unk2 = new uint[packageCount]; //unknown, probably related to the packages in some way given the count matches the package count
-                for (int i = 0;i < packageCount; i++)
+                installPartSizes = new uint[installPartCount];
+                for (int i = 0;i < installPartCount; i++)
                 {
-                    unk2[i] = stream.ReadUInt32();
+                    installPartSizes[i] = stream.ReadUInt32();
                 }
 
-                ID[] packageIds = new ID[packageCount]; //read package ids
-                for (int i = 0;i < packageCount; i++)
+                ID[] installPartIds = new ID[installPartCount]; //read installPart ids
+                for (int i = 0;i < installPartCount; i++)
                 {
-                    packageIds[i] = new ID(stream);
+                    installPartIds[i] = new ID(stream);
                 }
 
                 ddsHeaders = new DDSHeader[ddsHeaderCount]; //read dds headers
@@ -79,10 +81,10 @@ namespace SnowplowCLI
         {
             List<byte[]> fileData = new List<byte[]>();
 
-            string packagePath = Path.Combine(path, fileEntry.packageName);
-            if (File.Exists(packagePath))
+            string installPartPath = Path.Combine(path, fileEntry.installPartName);
+            if (File.Exists(installPartPath))
             {
-                using (DataStream stream = BlockStream.FromFile(packagePath))
+                using (DataStream stream = BlockStream.FromFile(installPartPath))
                 {
                     if (fileEntry.compressedSizes.Count == 0)
                     {
@@ -190,7 +192,7 @@ namespace SnowplowCLI
                     byte chr2 = stream.ReadByte();
                     int byteCount = chr2 & 3;
                     int byteValue = chr2 >> 2;
-                    ulong DdsType = ReadVariadicInteger(byteCount, stream);
+                    ulong ddsType = ReadVariadicInteger(byteCount, stream);
 
                     for (int chunkIndex = 0; chunkIndex < count1; chunkIndex++)
                     {
@@ -201,12 +203,12 @@ namespace SnowplowCLI
                         //    }
 
                         int compressedSizeByteCount = (ch3 & 3) + 1;
-                        int packageOffsetByteCount = (ch3 >> 2) & 7;
+                        int filePartOffsetByteCount = (ch3 >> 2) & 7;
                         bool hasCompression = ((ch3 >> 5) & 1) != 0;
 
                         ulong decompressedSize = 0;
                         ulong compressedSize = 0;
-                        ulong packageOffset = 0;
+                        ulong filePartOffset = 0;
                         long fileId = -1;
 
                         if (compressedSizeByteCount > 0)
@@ -217,12 +219,12 @@ namespace SnowplowCLI
                         {
                             compressedSize = ReadVariadicInteger(compressedSizeByteCount, stream);
                         }
-                        if (packageOffsetByteCount != 0)
+                        if (filePartOffsetByteCount != 0)
                         {
-                            packageOffset = ReadVariadicInteger(packageOffsetByteCount, stream);
+                            filePartOffset = ReadVariadicInteger(filePartOffsetByteCount, stream);
                         }
 
-                        ulong packageId = ReadVariadicInteger(2, stream);
+                        ulong installPartId = ReadVariadicInteger(2, stream);
 
 
                         List<ulong> compSizeArray = new List<ulong>();
@@ -249,7 +251,7 @@ namespace SnowplowCLI
                         if (compSizeArray.Count == 0 && hasCompression)
                             compSizeArray.Add(compressedSize);
 
-                        addFileEntry(fileTable.fileEntries, name, packageId, seperator, packageOffset, hasCompression, compSizeArray, decompressedSize, byteCount != 0 && chunkIndex == 0, DdsType, chunkIndex != 0);
+                        AddFileEntry(fileTable.fileEntries, name, installPartId, seperator, filePartOffset, hasCompression, compSizeArray, decompressedSize, byteCount != 0 && chunkIndex == 0, ddsType, chunkIndex != 0);
                     }
                 }
                 if ((ch & 8) != 0) //flag1
@@ -300,17 +302,17 @@ namespace SnowplowCLI
 
         #region Utility Functions
 
-        public void addFileEntry(List<FileEntry> fileEntries, string fileName, ulong packageId, string seperator, ulong offset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex, bool isChunk)
+        public void AddFileEntry(List<FileEntry> fileEntries, string fileName, ulong installPartId, string seperator, ulong filePartoffset, bool isCompressed, List<ulong> compressedSizes, ulong decompressedSize, bool isDDS, ulong ddsHeaderIndex, bool isChunk)
         {
             //
             //adds a file entry to the file table
             //
-            string packageName = GetPackageName(packageId, seperator);
+            string installPartName = GetinstallPartName(installPartId, seperator);
             fileEntries.Add(new FileEntry()
             {
                 fileName = fileName,
-                packageName = packageName,
-                offset = offset,
+                installPartName = installPartName,
+                filePartoffset = filePartoffset,
                 isCompressed = isCompressed,
                 compressedSizes = compressedSizes,
                 decompressedSize = decompressedSize,
@@ -320,19 +322,19 @@ namespace SnowplowCLI
             });
         }
 
-        public string GetPackageName(ulong packageId, string seperator)
+        public string GetinstallPartName(ulong installPartId, string seperator)
         {
             //
-            //get sdfdata package name for a specified packageId
+            //get sdfdata installPart name for a specified installPartId
             //
-            string packageLayer;
-            if (packageId < 1000) packageLayer = "A";
-            else if (packageId < 2000) packageLayer = "B";
-            else if (packageId < 3000) packageLayer = "C";
-            else packageLayer = "D";
+            string installPartLayer;
+            if (installPartId < 1000) installPartLayer = "A";
+            else if (installPartId < 2000) installPartLayer = "B";
+            else if (installPartId < 3000) installPartLayer = "C";
+            else installPartLayer = "D";
 
-            string packageName = $"sdf{seperator}{packageLayer}{seperator}{packageId.ToString("D" + 4)}.sdfdata";
-            return packageName;
+            string installPartName = $"sdf{seperator}{installPartLayer}{seperator}{installPartId.ToString("D" + 4)}.sdfdata";
+            return installPartName;
         }
 
         private ulong ReadVariadicInteger(int Count, DataStream stream)
@@ -375,8 +377,8 @@ namespace SnowplowCLI
         public class FileEntry
         {
             public string fileName;
-            public string packageName;
-            public ulong offset;
+            public string installPartName;
+            public ulong filePartoffset;
             public bool isCompressed;
             public List<ulong> compressedSizes;
             public ulong decompressedSize;

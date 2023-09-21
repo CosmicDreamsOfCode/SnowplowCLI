@@ -1,9 +1,4 @@
 ﻿using SnowplowCLI.Utils;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Enumeration;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using static SnowplowCLI.SDFS;
 
 namespace SnowplowCLI
@@ -50,7 +45,7 @@ namespace SnowplowCLI
                             string fsFileDir = Path.GetDirectoryName(fileEntry.fileName);
                             string outputPath = Path.Combine(dumpPath, fsFileDir);
                             Directory.CreateDirectory(outputPath);
-                            if (fileEntry.isChunk)
+                            if (fileEntry.isChunk) //if the file is a chunk it means we need to append it instead in case the first chunk was already written
                             {
                                 using (var fileStream = new FileStream(Path.Combine(dumpPath, fileEntry.fileName), FileMode.Append, FileAccess.Write))
                                 {
