@@ -1,10 +1,17 @@
 # SnowplowCLI
-Experimental tool for dumping data from Snowdrop Engine games.
+Experimental tool for dumping data from [Snowdrop Engine](https://www.massive.se/project/snowdrop-engine/) games.
 
 It's a little slow right now, some help optimising would be nice!
 
 Usage:
-SnowplowCLI [tocPath] [outputPath]
+
+`SnowplowCLI [sdftocPath] [outputPath]`
+
+## Supported Games
+
+- [Mario + Rabbids: Kingdom Battle [NSW]](https://www.ubisoft.com/en-gb/game/mario-rabbids/kingdom-battle)
+- [Mario + Rabbids: Sparks of Hope [NSW]](https://www.ubisoft.com/en-gb/game/mario-rabbids/sparks-of-hope)
+
 
 ## SnowplowCLI makes use of the following packages:
 
